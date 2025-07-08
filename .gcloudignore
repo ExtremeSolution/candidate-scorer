@@ -18,8 +18,7 @@
 **/*credentials*
 **/gcp-*.json
 
-# Company analysis data (may contain sensitive business info)
-company_profile.json
+# Company analysis data - INCLUDED for enhanced analysis
 
 # Git
 .git/

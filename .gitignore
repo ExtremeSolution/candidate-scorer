@@ -14,7 +14,7 @@
 **/gcp-*.json
 
 # Company analysis data (may contain sensitive business info)
-company_profile.json
+# company_profile.json (now included for enhanced scoring)
 
 # Python
 __pycache__/
