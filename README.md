@@ -141,12 +141,39 @@ gcloud run deploy hr-scorer \
 
 ## 📊 Cost Analysis
 
+### Monthly Infrastructure Costs
 | Component | Monthly Cost | Notes |
 |-----------|-------------|-------|
 | Cloud Run | $5-15 | Auto-scaling, pay per use |
-| Document AI | $10-20 | PDF processing (has free tier) |
+| Document AI | $0-20 | First 1,000 pages/month free, then $1.50/1,000 pages |
 | Vertex AI/Gemini | $10-30 | Text analysis and scoring |
-| **Total** | **$25-65** | **vs $200-500 for enterprise solutions** |
+| **Total** | **$15-65** | **vs $200-500 for enterprise solutions** |
+
+### Cost Per 1,000 Resume Analyses
+Based on real Google Cloud pricing (as of 2024):
+
+| Component | Usage | Cost | Details |
+|-----------|--------|------|---------|
+| **Cloud Run** | 60,000 vCPU-seconds<br>60,000 GB-seconds<br>1,000 requests | **$1.60** | • 1 vCPU × 60s per analysis<br>• 1 GB RAM × 60s per analysis<br>• $0.40 per million requests |
+| **Document AI** | 1,000 pages | **$0.00** | • First 1,000 pages/month FREE<br>• Then $1.50 per 1,000 pages<br>• Assumes 1 page per resume |
+| **Gemini API** | 3.5M input tokens<br>0.5M output tokens | **$6.88** | • ~3,500 tokens per analysis<br>• $1.25 per 1M input tokens<br>• $5.00 per 1M output tokens |
+| **Enhanced Analysis** | 1 company profile | **$0.00** | • Company analysis cached<br>• Shared across all candidates |
+| | | | |
+| **TOTAL** | **1,000 resumes** | **🎯 $8.50** | **vs $200-500/month enterprise tools** |
+
+### Cost Comparison
+
+| Solution Type | 1,000 Resumes | Monthly Cost | Annual Cost |
+|---------------|----------------|-------------|-------------|
+| **HR Candidate Scorer** | $8.50 | $15-65 | $180-780 |
+| Enterprise SaaS | $200-500 | $200-500 | $2,400-6,000 |
+| **Savings** | **96% cheaper** | **70-87% cheaper** | **75-92% cheaper** |
+
+**💡 Key Insights:**
+- **Pay-per-use model**: Only pay for what you analyze
+- **Volume discounts**: Larger volumes become even more cost-effective  
+- **No subscription fees**: Unlike enterprise solutions with fixed monthly costs
+- **Transparent pricing**: All costs based on actual Google Cloud usage
 
 ## 🔧 Configuration Options
 
