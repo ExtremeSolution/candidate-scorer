@@ -1,0 +1,91 @@
+# This file specifies files that are *not* uploaded to Google Cloud
+# using gcloud. It follows the same syntax as .gitignore, with the addition of
+# "#!include" directives (which insert the entries of the given .gitignore-style
+# file at that point).
+
+#!include:.gitignore
+
+# Environment files containing secrets
+.env
+.env.*
+*.env
+
+# API Keys and credentials
+**/credentials.json
+**/service-account*.json
+**/key*.json
+**/*-key.json
+**/*credentials*
+**/gcp-*.json
+
+# Company analysis data (may contain sensitive business info)
+company_profile.json
+
+# Git
+.git/
+.gitignore
+
+# Documentation (not needed for build)
+*.md
+README*
+CHANGELOG*
+LICENSE*
+docs/
+
+# Development and testing
+.pytest_cache/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.coverage
+.cache
+htmlcov/
+.tox/
+test_*.py
+*_test.py
+tests/
+*.test
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+gcloud-logs/
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+node_modules/
+
+# Deployment utilities (not needed in build)
+create-sa.sh
+test_local.py
+
+# IDE files
+*.swp
+*.swo
+*~
+
+# Backup files
+*.bak
+*.backup
+*~

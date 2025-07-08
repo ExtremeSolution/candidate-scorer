@@ -1,0 +1,6 @@
+Flask==2.3.3
+google-cloud-documentai
+google-generativeai
+requests
+beautifulsoup4
+PyPDF2

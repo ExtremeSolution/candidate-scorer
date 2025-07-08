@@ -1,0 +1,93 @@
+# Environment files containing secrets
+.env
+.env.local
+.env.production
+.env.staging
+*.env
+
+# API Keys and credentials
+**/credentials.json
+**/service-account*.json
+**/key*.json
+**/*-key.json
+**/*credentials*
+**/gcp-*.json
+
+# Company analysis data (may contain sensitive business info)
+company_profile.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Logs
+*.log
+logs/
+gcloud-logs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Planning and private documents
+PROGRESS_SUMMARY.md
+planning/
+docs/private/
+*.private.md
+*-private.md
+notes/
+brainstorming/
+planning-*
+roadmap-private*
+
+# Google Cloud
+.gcloud/
+gcp-credentials.json

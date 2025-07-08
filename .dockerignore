@@ -1,0 +1,70 @@
+# Environment files containing secrets
+.env
+.env.*
+*.env
+
+# API Keys and credentials
+**/credentials.json
+**/service-account*.json
+**/key*.json
+**/*-key.json
+**/*credentials*
+**/gcp-*.json
+
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+docs/
+
+# Development files
+.pytest_cache/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.coverage
+.cache
+htmlcov/
+.tox/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Test files
+test_*.py
+*_test.py
+tests/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Deployment scripts (not needed in container)
+deploy.sh
+cleanup.sh
+create-sa.sh
+
+# Development utilities
+test_local.py

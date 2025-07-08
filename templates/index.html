@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HR Candidate Scorer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            max-width: 900px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            padding: 40px;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #4285f4;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+        
+        .form-group { 
+            margin-bottom: 25px; 
+        }
+        
+        label { 
+            display: block; 
+            margin-bottom: 8px; 
+            font-weight: 600;
+            color: #555;
+            font-size: 0.95em;
+        }
+        
+        input, textarea { 
+            width: 100%; 
+            padding: 12px 15px; 
+            margin-bottom: 10px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #4285f4;
+            box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.1);
+        }
+        
+        button { 
+            background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
+            color: white; 
+            padding: 15px 30px; 
+            border: none; 
+            cursor: pointer;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(66, 133, 244, 0.4);
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .results { 
+            margin-top: 30px; 
+            padding: 25px; 
+            background: #f8f9fa; 
+            border-radius: 10px;
+            border-left: 5px solid #4285f4;
+        }
+        
+        .score { 
+            font-size: 28px; 
+            font-weight: bold; 
+            color: #0f9d58;
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .error { 
+            color: #d93025;
+            background: #ffeaea;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #d93025;
+        }
+        
+        .loading { 
+            display: none;
+            text-align: center;
+            padding: 30px;
+            background: #e8f4fd;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4285f4;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .progress-steps {
+            margin: 20px 0;
+        }
+        
+        .step {
+            padding: 8px 0;
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .step.active {
+            color: #4285f4;
+            font-weight: 600;
+        }
+        
+        .step.completed {
+            color: #0f9d58;
+        }
+        
+        .step.completed:before {
+            content: "✓ ";
+            color: #0f9d58;
+            font-weight: bold;
+        }
+        
+        .thinking-stream {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: white;
+            font-size: 0.9em;
+        }
+        
+        .footer a {
+            color: #fff;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        
+        /* Modern Results Styling */
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 12px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .candidate-info h3.candidate-name {
+            color: #2c3e50;
+            font-size: 1.4em;
+            margin-bottom: 8px;
+        }
+        
+        .candidate-contact {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .contact-item {
+            background: #fff;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            color: #666;
+            border: 1px solid #e1e5e9;
+        }
+        
+        .recommendation-badge {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+        }
+        
+        .recommendation-badge.strong-match {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .recommendation-badge.moderate-match {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .recommendation-badge.weak-match {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .analysis-type {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .enhanced-badge {
+            background: #d4edda;
+            color: #155724;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .basic-badge {
+            background: #fff3cd;
+            color: #856404;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .info-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border: 1px solid #e1e5e9;
+        }
+        
+        .card-title {
+            color: #2c3e50;
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        .company-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        
+        .company-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #4285f4;
+        }
+        
+        .company-item .label {
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .company-item .value {
+            color: #333;
+            text-align: right;
+            max-width: 60%;
+        }
+        
+        .scores-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .score-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        
+        .score-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .score-icon {
+            font-size: 1.2em;
+        }
+        
+        .score-name {
+            flex-grow: 1;
+            margin-left: 10px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .score-value {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .score-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .score-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        
+        .score-fill.excellent {
+            background: linear-gradient(90deg, #28a745, #20c997);
+        }
+        
+        .score-fill.good {
+            background: linear-gradient(90deg, #17a2b8, #20c997);
+        }
+        
+        .score-fill.fair {
+            background: linear-gradient(90deg, #ffc107, #fd7e14);
+        }
+        
+        .score-fill.poor {
+            background: linear-gradient(90deg, #dc3545, #e83e8c);
+        }
+        
+        .profile-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        
+        .profile-item {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .profile-item.full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .profile-item .label {
+            font-weight: 600;
+            color: #555;
+            font-size: 0.9em;
+        }
+        
+        .profile-item .value {
+            color: #333;
+        }
+        
+        .skills-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 5px;
+        }
+        
+        .skill-tag {
+            background: linear-gradient(135deg, #4285f4, #34a853);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+        
+        .summary-text {
+            line-height: 1.6;
+            color: #666;
+            font-style: italic;
+        }
+        
+        .assessment-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .assessment-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #6c757d;
+        }
+        
+        .assessment-section.strengths {
+            border-left-color: #28a745;
+        }
+        
+        .assessment-section.concerns {
+            border-left-color: #ffc107;
+        }
+        
+        .assessment-section.interview {
+            border-left-color: #17a2b8;
+        }
+        
+        .assessment-section.highlights {
+            border-left-color: #007bff;
+        }
+        
+        .assessment-section.challenges {
+            border-left-color: #fd7e14;
+        }
+        
+        .assessment-section.onboarding {
+            border-left-color: #6f42c1;
+        }
+        
+        .section-title {
+            color: #2c3e50;
+            font-size: 1em;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+        
+        .assessment-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .assessment-list li {
+            padding: 8px 0;
+            padding-left: 20px;
+            position: relative;
+            line-height: 1.4;
+            color: #555;
+        }
+        
+        .assessment-list li:before {
+            content: "•";
+            color: #4285f4;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+        
+        .rationale-text {
+            line-height: 1.8;
+            color: #555;
+            font-size: 1.05em;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #4285f4;
+        }
+        
+        .job-content {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            line-height: 1.6;
+            color: #666;
+            font-size: 0.95em;
+            border: 1px solid #e1e5e9;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .result-header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            
+            .candidate-contact {
+                justify-content: center;
+            }
+            
+            .company-grid,
+            .profile-grid,
+            .assessment-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .scores-grid {
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>HR Candidate Scorer</h1>
+        <p class="subtitle">AI-powered candidate evaluation with enhanced company fit analysis</p>
+        
+        <form id="analyzeForm" enctype="multipart/form-data">
+            <div class="form-group">
+                <label>Job Description URL:</label>
+                <input type="url" name="jd_url" placeholder="https://company.com/job-posting" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Candidate Resume (PDF or TXT):</label>
+                <input type="file" name="resume_file" accept=".pdf,.txt" required>
+            </div>
+            
+            <button type="submit" id="submitBtn">Analyze Candidate</button>
+            
+            <div class="loading" id="loading">
+                <div class="loading-spinner"></div>
+                <h3>Analyzing Candidate...</h3>
+                <p>This process typically takes 30-60 seconds</p>
+                
+                <div class="progress-steps" id="progressSteps">
+                    <div class="step" id="step1">Parsing resume content...</div>
+                    <div class="step" id="step2">Extracting job requirements...</div>
+                    <div class="step" id="step3">Loading company profile...</div>
+                    <div class="step" id="step4">Analyzing candidate fit...</div>
+                    <div class="step" id="step5">Generating recommendations...</div>
+                </div>
+                
+                <div class="thinking-stream" id="thinkingStream" style="display: none;">
+                    <strong>AI Analysis Stream:</strong><br>
+                    <div id="streamContent"></div>
+                </div>
+            </div>
+        </form>
+        
+        <div id="results" class="results" style="display: none;">
+            <h2>Analysis Results</h2>
+            <div id="resultContent"></div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        Open Source • MIT Licensed • <a href="https://github.com/extremesolution/hr-agent" target="_blank">GitHub</a>
+    </div>
+
+    <script>
+        let currentStep = 0;
+        let thinkingMessages = [
+            "Extracting candidate name and contact information...",
+            "Analyzing education background and certifications...",
+            "Parsing work experience and job progression...",
+            "Identifying technical skills and competencies...",
+            "Evaluating soft skills and leadership qualities...",
+            "Cross-referencing job requirements with candidate profile...",
+            "Loading company culture and values framework...",
+            "Assessing industry experience and domain knowledge...",
+            "Calculating skills match percentage...",
+            "Evaluating culture fit based on company profile...",
+            "Analyzing geographic and remote work preferences...",
+            "Determining growth stage compatibility...",
+            "Generating personalized interview questions...",
+            "Compiling strengths and potential concerns...",
+            "Finalizing recommendation and scoring..."
+        ];
+
+        document.getElementById('analyzeForm').onsubmit = async function(e) {
+            e.preventDefault();
+            
+            // Show loading and hide results
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            
+            // Disable submit button
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Analyzing...';
+            
+            // Reset progress steps
+            resetProgressSteps();
+            
+            // Start progress animation
+            startProgressAnimation();
+            
+            // Start thinking stream after 2 seconds
+            setTimeout(() => {
+                startThinkingStream();
+            }, 2000);
+            
+            const formData = new FormData(this);
+            
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                // Complete all steps quickly
+                completeAllSteps();
+                
+                // Show final thinking message
+                addThinkingMessage("Analysis complete! Generating results...");
+                
+                setTimeout(() => {
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('results').style.display = 'block';
+                    
+                    // Re-enable submit button
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Analyze Candidate';
+                    
+                    if (data.success) {
+                        document.getElementById('resultContent').innerHTML = formatResults(data);
+                    } else {
+                        document.getElementById('resultContent').innerHTML = 
+                            `<div class="error">Error: ${data.error}</div>`;
+                    }
+                }, 1000);
+                
+            } catch (error) {
+                completeAllSteps();
+                addThinkingMessage("Error occurred during analysis.");
+                
+                setTimeout(() => {
+                    document.getElementById('loading').style.display = 'none';
+                    
+                    // Re-enable submit button
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Analyze Candidate';
+                    
+                    document.getElementById('resultContent').innerHTML = 
+                        `<div class="error">Error: ${error.message}</div>`;
+                    document.getElementById('results').style.display = 'block';
+                }, 1000);
+            }
+        };
+
+        function resetProgressSteps() {
+            currentStep = 0;
+            for (let i = 1; i <= 5; i++) {
+                const step = document.getElementById(`step${i}`);
+                step.className = 'step';
+            }
+            
+            // Hide thinking stream
+            document.getElementById('thinkingStream').style.display = 'none';
+            document.getElementById('streamContent').innerHTML = '';
+        }
+
+        function startProgressAnimation() {
+            const stepDuration = 3000; // 3 seconds per step
+            
+            function activateNextStep() {
+                if (currentStep < 5) {
+                    currentStep++;
+                    
+                    // Mark previous step as completed
+                    if (currentStep > 1) {
+                        document.getElementById(`step${currentStep - 1}`).className = 'step completed';
+                    }
+                    
+                    // Mark current step as active
+                    document.getElementById(`step${currentStep}`).className = 'step active';
+                    
+                    // Continue to next step
+                    setTimeout(activateNextStep, stepDuration);
+                }
+            }
+            
+            // Start first step
+            setTimeout(activateNextStep, 500);
+        }
+
+        function startThinkingStream() {
+            document.getElementById('thinkingStream').style.display = 'block';
+            let messageIndex = 0;
+            
+            function addNextMessage() {
+                if (messageIndex < thinkingMessages.length) {
+                    addThinkingMessage(thinkingMessages[messageIndex]);
+                    messageIndex++;
+                    
+                    // Random delay between 1-3 seconds
+                    const delay = Math.random() * 2000 + 1000;
+                    setTimeout(addNextMessage, delay);
+                }
+            }
+            
+            addNextMessage();
+        }
+
+        function addThinkingMessage(message) {
+            const streamContent = document.getElementById('streamContent');
+            streamContent.innerHTML += message + '\n';
+            
+            // Auto-scroll to bottom
+            streamContent.parentNode.scrollTop = streamContent.parentNode.scrollHeight;
+        }
+
+        function completeAllSteps() {
+            // Mark all steps as completed
+            for (let i = 1; i <= 5; i++) {
+                document.getElementById(`step${i}`).className = 'step completed';
+            }
+        }
+        
+        function formatResults(data) {
+            try {
+                // Data is already parsed JSON from the backend
+                const resume = data.resume_analysis;
+                const scoring = data.scoring;
+                const enhanced = data.enhanced_analysis;
+                const companyInfo = data.company_summary;
+                
+                let result = `
+                    <div class="result-header">
+                        <div class="candidate-info">
+                            <h3 class="candidate-name">👤 ${resume.name || 'Unknown Candidate'}</h3>
+                            <div class="candidate-contact">
+                                ${resume.email ? `<span class="contact-item">📧 ${resume.email}</span>` : ''}
+                                ${resume.phone ? `<span class="contact-item">📱 ${resume.phone}</span>` : ''}
+                                ${resume.experience_years ? `<span class="contact-item">⏰ ${resume.experience_years} years experience</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="score">Overall Score: ${scoring.overall_score}/10</div>
+                    </div>
+                    
+                    <div class="recommendation-badge ${scoring.recommendation?.toLowerCase().replace(' ', '-') || 'unknown'}">
+                        <strong>${getRecommendationIcon(scoring.recommendation)} ${scoring.recommendation || 'Unknown'}</strong>
+                    </div>
+                    
+                    <div class="analysis-type">
+                        ${enhanced ? '<span class="enhanced-badge">✅ Enhanced Analysis with Company Context</span>' : '<span class="basic-badge">⚠️ Basic Analysis (No Company Context)</span>'}
+                    </div>
+                `;
+                
+                // Company Summary (if enhanced analysis)
+                if (enhanced && companyInfo) {
+                    result += `
+                        <div class="info-card company-context">
+                            <h4 class="card-title">🏢 Company Context</h4>
+                            <div class="company-grid">
+                                <div class="company-item">
+                                    <span class="label">Industry:</span>
+                                    <span class="value">${companyInfo.industry}</span>
+                                </div>
+                                <div class="company-item">
+                                    <span class="label">Company Stage:</span>
+                                    <span class="value">${companyInfo.stage}</span>
+                                </div>
+                                <div class="company-item">
+                                    <span class="label">Work Environment:</span>
+                                    <span class="value">${companyInfo.culture}</span>
+                                </div>
+                                <div class="company-item">
+                                    <span class="label">Mission:</span>
+                                    <span class="value">${companyInfo.mission}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Score Breakdown with visual bars
+                result += `
+                    <div class="info-card score-breakdown">
+                        <h4 class="card-title">📊 Score Breakdown</h4>
+                        <div class="scores-grid">
+                            ${createScoreBar('Skills Match', scoring.skills_match, '🎯')}
+                            ${createScoreBar('Experience Match', scoring.experience_match, '💼')}
+                            ${createScoreBar('Culture Fit', scoring.culture_fit, '🤝')}
+                `;
+                
+                // Enhanced scoring dimensions (if available)
+                if (enhanced) {
+                    if (scoring.industry_fit) result += createScoreBar('Industry Fit', scoring.industry_fit, '🏭');
+                    if (scoring.geographic_fit) result += createScoreBar('Geographic Fit', scoring.geographic_fit, '🌍');
+                    if (scoring.growth_stage_fit) result += createScoreBar('Growth Stage Fit', scoring.growth_stage_fit, '📈');
+                    if (scoring.values_alignment) result += createScoreBar('Values Alignment', scoring.values_alignment, '⭐');
+                }
+                result += `
+                        </div>
+                    </div>
+                `;
+                
+                // Candidate Profile
+                result += `
+                    <div class="info-card candidate-profile">
+                        <h4 class="card-title">👨‍💻 Candidate Profile</h4>
+                        <div class="profile-grid">
+                            <div class="profile-item">
+                                <span class="label">Experience Level:</span>
+                                <span class="value">${resume.experience_level || 'Not specified'}</span>
+                            </div>
+                            <div class="profile-item full-width">
+                                <span class="label">Key Skills:</span>
+                                <div class="skills-tags">
+                                    ${Array.isArray(resume.skills) ? resume.skills.map(skill => `<span class="skill-tag">${skill}</span>`).join('') : `<span class="skill-tag">${resume.skills || 'Not found'}</span>`}
+                                </div>
+                            </div>
+                            <div class="profile-item full-width">
+                                <span class="label">Summary:</span>
+                                <span class="value summary-text">${resume.summary || 'Not available'}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Assessment
+                result += `
+                    <div class="info-card assessment">
+                        <h4 class="card-title">📝 Assessment</h4>
+                        <div class="assessment-grid">
+                            <div class="assessment-section strengths">
+                                <h5 class="section-title">✅ Strengths</h5>
+                                <ul class="assessment-list">
+                                    ${Array.isArray(scoring.strengths) ? scoring.strengths.map(item => `<li>${item}</li>`).join('') : `<li>${scoring.strengths || 'None specified'}</li>`}
+                                </ul>
+                            </div>
+                            <div class="assessment-section concerns">
+                                <h5 class="section-title">⚠️ Concerns</h5>
+                                <ul class="assessment-list">
+                                    ${Array.isArray(scoring.concerns) ? scoring.concerns.map(item => `<li>${item}</li>`).join('') : `<li>${scoring.concerns || 'None specified'}</li>`}
+                                </ul>
+                            </div>
+                            <div class="assessment-section interview">
+                                <h5 class="section-title">💬 Interview Focus</h5>
+                                <ul class="assessment-list">
+                                    ${Array.isArray(scoring.interview_focus) ? scoring.interview_focus.map(item => `<li>${item}</li>`).join('') : `<li>${scoring.interview_focus || 'General discussion'}</li>`}
+                                </ul>
+                            </div>
+                `;
+                
+                // Enhanced assessment fields (if available)
+                if (enhanced) {
+                    if (scoring.company_fit_highlights && Array.isArray(scoring.company_fit_highlights) && scoring.company_fit_highlights.length > 0) {
+                        result += `
+                            <div class="assessment-section highlights">
+                                <h5 class="section-title">🎯 Company Fit Highlights</h5>
+                                <ul class="assessment-list">
+                                    ${scoring.company_fit_highlights.map(item => `<li>${item}</li>`).join('')}
+                                </ul>
+                            </div>
+                        `;
+                    }
+                    if (scoring.potential_challenges && Array.isArray(scoring.potential_challenges) && scoring.potential_challenges.length > 0) {
+                        result += `
+                            <div class="assessment-section challenges">
+                                <h5 class="section-title">🚧 Potential Challenges</h5>
+                                <ul class="assessment-list">
+                                    ${scoring.potential_challenges.map(item => `<li>${item}</li>`).join('')}
+                                </ul>
+                            </div>
+                        `;
+                    }
+                    if (scoring.onboarding_considerations && Array.isArray(scoring.onboarding_considerations) && scoring.onboarding_considerations.length > 0) {
+                        result += `
+                            <div class="assessment-section onboarding">
+                                <h5 class="section-title">🚀 Onboarding Considerations</h5>
+                                <ul class="assessment-list">
+                                    ${scoring.onboarding_considerations.map(item => `<li>${item}</li>`).join('')}
+                                </ul>
+                            </div>
+                        `;
+                    }
+                }
+                
+                result += `
+                        </div>
+                    </div>
+                `;
+                
+                // Rationale
+                result += `
+                    <div class="info-card rationale">
+                        <h4 class="card-title">🧠 AI Rationale</h4>
+                        <p class="rationale-text">${scoring.rationale || 'Not provided'}</p>
+                    </div>
+                `;
+                
+                // Job Description Preview
+                result += `
+                    <div class="info-card job-preview">
+                        <h4 class="card-title">📋 Job Description Preview</h4>
+                        <div class="job-content">${data.jd_preview}</div>
+                    </div>
+                `;
+                
+                return result;
+            } catch (e) {
+                return `<div class="error">Error displaying results: ${e.message}</div>`;
+            }
+        }
+        
+        function createScoreBar(label, score, icon) {
+            const percentage = (score / 10) * 100;
+            const colorClass = score >= 8 ? 'excellent' : score >= 6 ? 'good' : score >= 4 ? 'fair' : 'poor';
+            
+            return `
+                <div class="score-item">
+                    <div class="score-label">
+                        <span class="score-icon">${icon}</span>
+                        <span class="score-name">${label}</span>
+                        <span class="score-value">${score}/10</span>
+                    </div>
+                    <div class="score-bar">
+                        <div class="score-fill ${colorClass}" style="width: ${percentage}%"></div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function getRecommendationIcon(recommendation) {
+            if (!recommendation) return '❓';
+            const rec = recommendation.toLowerCase();
+            if (rec.includes('strong')) return '🎯';
+            if (rec.includes('moderate')) return '⚖️';
+            if (rec.includes('weak')) return '⚠️';
+            return '📋';
+        }
+    </script>
+</body>
+</html>
