@@ -146,7 +146,7 @@ gcloud run deploy hr-scorer \
 |-----------|-------------|-------|
 | Cloud Run | $5-15 | Auto-scaling, pay per use |
 | Document AI | $0-20 | First 1,000 pages/month free, then $1.50/1,000 pages |
-| Vertex AI/Gemini | $10-30 | Text analysis and scoring |
+| Gemini API | $10-30 | Text analysis and scoring |
 | **Total** | **$15-65** | **vs $200-500 for enterprise solutions** |
 
 ### Cost Per 1,000 Resume Analyses
@@ -308,7 +308,7 @@ Interview Focus: System design, team collaboration, testing practices
 - ✅ **SKIP LOGIC**: Skips setup entirely if processor ID already exists in .env
 
 **Gemini API errors**  
-- Verify Vertex AI API is enabled (deploy script handles this)
+- Verify Gemini API key is valid and has sufficient quota
 - Check service account permissions (deploy script handles this)
 - Try different model (update `GEMINI_MODEL` in .env)
 
