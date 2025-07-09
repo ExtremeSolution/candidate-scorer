@@ -59,7 +59,7 @@ An open-source, enterprise-grade HR tool that uses Google Cloud's AI services to
 
 ```bash
 git clone <your-repo-url>
-cd hr-agent
+cd candidate-scorer
 cp .env.example .env
 ```
 
@@ -269,7 +269,7 @@ Interview Focus: System design, team collaboration, testing practices
 
 ### Customization Options
 
-- **Custom prompts**: Modify scoring criteria in `main.py`
+- **Custom prompts**: Modify scoring criteria in `prompts.json`
 - **Additional fields**: Extend analysis with company-specific requirements
 - **Integration**: Add APIs for ATS integration
 - **Branding**: Customize the web interface
@@ -319,7 +319,7 @@ Interview Focus: System design, team collaboration, testing practices
 - Run `./cleanup.sh` to clean up failed deployments
 
 **Poor scoring accuracy**
-- Adjust prompts in `main.py`
+- Adjust prompts in `prompts.json`
 - Try different Gemini model (gemini-2.5-flash, gemini-2.5-pro)
 - Ensure job descriptions are detailed and complete
 
@@ -381,8 +381,8 @@ python main.py        # Start local server
 Thanks to all the contributors who help make this project better!
 
 <!-- Contributors will be automatically updated -->
-<a href="https://github.com/extremesolution/hr-agent/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=extremesolution/hr-agent" />
+<a href="https://github.com/extremesolution/candidate-scorer/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=extremesolution/candidate-scorer" />
 </a>
 
 *Want to see your avatar here? [Start contributing!](CONTRIBUTING.md)*
