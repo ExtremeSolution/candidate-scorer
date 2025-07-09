@@ -269,7 +269,7 @@ Interview Focus: System design, team collaboration, testing practices
 
 ### Customization Options
 
-- **Custom prompts**: Modify scoring criteria in `main.py`
+- **Custom prompts**: Modify scoring criteria in `prompts.json`
 - **Additional fields**: Extend analysis with company-specific requirements
 - **Integration**: Add APIs for ATS integration
 - **Branding**: Customize the web interface
@@ -319,7 +319,7 @@ Interview Focus: System design, team collaboration, testing practices
 - Run `./cleanup.sh` to clean up failed deployments
 
 **Poor scoring accuracy**
-- Adjust prompts in `main.py`
+- Adjust prompts in `prompts.json`
 - Try different Gemini model (gemini-2.5-flash, gemini-2.5-pro)
 - Ensure job descriptions are detailed and complete
 
