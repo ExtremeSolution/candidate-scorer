@@ -11,6 +11,7 @@ import PyPDF2
 import io
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
+from utils import analyze_company_profile, extract_company_pages
 
 app = Flask(__name__)
 
@@ -19,7 +20,7 @@ PROJECT_ID = os.environ.get('GCP_PROJECT_ID')
 REGION = os.environ.get('GCP_REGION', 'us-central1')
 LOCATION = os.environ.get('GCP_LOCATION', 'us')
 PROCESSOR_ID = os.environ.get('DOCUMENT_AI_PROCESSOR_ID')
-GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-1.5-pro')
+GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-2.5-pro')
 COMPANY_WEBSITE = os.environ.get('COMPANY_WEBSITE')
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 
@@ -44,6 +45,18 @@ try:
         print("ℹ️  No company profile found - using basic scoring")
 except Exception as e:
     print(f"⚠️  Error loading company profile: {str(e)} - using basic scoring")
+
+PROMPTS = {}
+try:
+    with open('prompts.json', 'r') as f:
+        PROMPTS = json.load(f)
+except Exception as e:
+    print(f"⚠️  Error loading prompts.json: {str(e)}")
+
+def get_prompt(prompt_name, **kwargs):
+    """Get and format a prompt from the loaded prompts."""
+    prompt_template = PROMPTS.get(prompt_name, {}).get("prompt", "")
+    return prompt_template.format(**kwargs)
 
 def extract_text_from_pdf(pdf_content):
     """Extract text from PDF using Document AI or fallback to PyPDF2"""
@@ -74,8 +87,22 @@ def extract_text_from_pdf(pdf_content):
         return ""
 
 def extract_text_from_url(url):
-    """New: Extract JD from URL"""
+    """New: Extract JD from URL with security validation"""
     try:
+        # Basic URL validation
+        parsed_url = urlparse(url)
+        if parsed_url.scheme not in ['http', 'https']:
+            return "Error: Invalid URL scheme. Only http and https are allowed."
+        
+        # Prevent SSRF
+        hostname = parsed_url.hostname
+        if not hostname or '.' not in hostname:
+             return "Error: Invalid hostname."
+        
+        # Avoid local/internal addresses (basic check)
+        if hostname == 'localhost' or hostname.startswith('127.') or hostname.startswith('10.') or hostname.startswith('192.168.'):
+            return "Error: Access to local or internal addresses is not allowed."
+
         response = requests.get(url, timeout=10)
         response.raise_for_status()
         
@@ -92,233 +119,30 @@ def extract_text_from_url(url):
 
 def analyze_resume(resume_text):
     """Reuse existing Gemini prompts from backup system"""
-    prompt = f"""
-    Extract the name, email, and skills from the following resume text.
-    Return ONLY a valid JSON object with the keys "name", "email", "phone", "skills", "experience_years", "experience_level", and "summary".
-    Do not include any other text or formatting.
-
-    Resume Text:
-    {resume_text}
-    """
-    
-    response = model.generate_content(prompt)
+    prompt = get_prompt("analyze_resume", resume_text=resume_text)
+    generation_config = genai.types.GenerationConfig(temperature=0.0)
+    response = model.generate_content(prompt, generation_config=generation_config)
     return response.text
 
-def extract_company_pages(company_website):
-    """Extract content from key company pages"""
-    if not company_website:
-        return {}
-    
-    try:
-        parsed_url = urlparse(company_website)
-        base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
-        
-        # Key pages to analyze
-        pages_to_check = [
-            ('main', company_website),
-            ('about', urljoin(base_url, '/about')),
-            ('about-us', urljoin(base_url, '/about-us')),
-            ('careers', urljoin(base_url, '/careers')),
-            ('jobs', urljoin(base_url, '/jobs')),
-            ('team', urljoin(base_url, '/team')),
-            ('culture', urljoin(base_url, '/culture')),
-            ('values', urljoin(base_url, '/values')),
-            ('mission', urljoin(base_url, '/mission')),
-            ('news', urljoin(base_url, '/news')),
-            ('blog', urljoin(base_url, '/blog'))
-        ]
-        
-        extracted_pages = {}
-        
-        for page_type, url in pages_to_check:
-            try:
-                response = requests.get(url, timeout=10, headers={
-                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
-                })
-                if response.status_code == 200:
-                    soup = BeautifulSoup(response.content, 'html.parser')
-                    
-                    # Remove script and style elements
-                    for script in soup(["script", "style", "nav", "footer", "header"]):
-                        script.decompose()
-                    
-                    text = soup.get_text()
-                    # Clean up whitespace
-                    text = re.sub(r'\s+', ' ', text).strip()
-                    
-                    if len(text) > 200:  # Only include meaningful content
-                        extracted_pages[page_type] = text[:2000]  # Limit content length
-                        
-            except Exception as e:
-                print(f"Could not extract {page_type} page: {str(e)}")
-                continue
-                
-        return extracted_pages
-        
-    except Exception as e:
-        print(f"Error extracting company pages: {str(e)}")
-        return {}
-
-def analyze_company_profile(company_website):
-    """Comprehensive company analysis using web scraping + LLM"""
-    if not company_website:
-        return None
-    
-    try:
-        # Extract company pages
-        company_pages = extract_company_pages(company_website)
-        
-        if not company_pages:
-            return None
-        
-        # Combine all extracted content
-        combined_content = ""
-        for page_type, content in company_pages.items():
-            combined_content += f"\n--- {page_type.upper()} PAGE ---\n{content}\n"
-        
-        # Analyze with Gemini
-        analysis_prompt = f"""
-        Analyze the following company information and provide a comprehensive company profile.
-        
-        COMPANY CONTENT:
-        {combined_content[:8000]}  # Limit content to avoid token limits
-        
-        Provide analysis in JSON format:
-        {{
-            "business_intelligence": {{
-                "industry_sector": "string",
-                "business_model": "string", 
-                "products_services": ["service1", "service2"],
-                "target_markets": ["market1", "market2"]
-            }},
-            "company_focus": {{
-                "core_mission": "string",
-                "strategic_priorities": ["priority1", "priority2"],
-                "values": ["value1", "value2"]
-            }},
-            "geographic_presence": {{
-                "headquarters": "string",
-                "offices": ["location1", "location2"],
-                "market_focus": "string"
-            }},
-            "company_culture": {{
-                "work_environment": "string",
-                "leadership_style": "string",
-                "team_dynamics": "string",
-                "communication_style": "string"
-            }},
-            "work_preferences": {{
-                "remote_policy": "string",
-                "collaboration_tools": ["tool1", "tool2"],
-                "work_life_balance": "string"
-            }},
-            "growth_stage": {{
-                "stage": "startup/scale-up/enterprise",
-                "funding_status": "string",
-                "expansion_plans": "string"
-            }},
-            "technical_culture": {{
-                "technologies_used": ["tech1", "tech2"],
-                "innovation_focus": "string",
-                "technical_approach": "string"
-            }},
-            "market_position": {{
-                "competitors": ["comp1", "comp2"],
-                "market_share": "string",
-                "reputation": "string"
-            }}
-        }}
-        """
-        
-        response = model.generate_content(analysis_prompt)
-        
-        # Parse response
-        match = re.search(r'\{.*\}', response.text, re.DOTALL)
-        if match:
-            json_str = match.group(0)
-            company_profile = json.loads(json_str)
-            return company_profile
-        else:
-            print(f"Could not parse company analysis response: {response.text}")
-            return None
-            
-    except Exception as e:
-        print(f"Error analyzing company profile: {str(e)}")
-        return None
 
 def score_candidate_with_company_context(resume_data, jd_text, company_profile=None):
     """Enhanced scoring with comprehensive company context"""
-    
     if company_profile:
-        # Enhanced scoring with company context
-        prompt = f"""
-        Score this candidate against the job description with comprehensive company context:
-
-        CANDIDATE:
-        {resume_data}
-
-        JOB DESCRIPTION:
-        {jd_text}
-
-        COMPANY PROFILE:
-        {json.dumps(company_profile, indent=2)}
-
-        Consider the following multi-dimensional fit assessment:
-        1. Technical Skills Alignment
-        2. Experience Relevance 
-        3. Industry & Business Model Fit
-        4. Cultural & Work Style Compatibility
-        5. Geographic & Market Alignment
-        6. Growth Stage & Career Level Match
-        7. Values & Mission Alignment
-        8. Communication & Collaboration Style
-
-        Provide comprehensive scoring in JSON format:
-        {{
-            "overall_score": 1-10,
-            "skills_match": 1-10,
-            "experience_match": 1-10,
-            "culture_fit": 1-10,
-            "industry_fit": 1-10,
-            "geographic_fit": 1-10,
-            "growth_stage_fit": 1-10,
-            "values_alignment": 1-10,
-            "recommendation": "Strong/Moderate/Weak Match",
-            "strengths": ["strength1", "strength2", "strength3"],
-            "concerns": ["concern1", "concern2"],
-            "interview_focus": ["topic1", "topic2", "topic3"],
-            "company_fit_highlights": ["highlight1", "highlight2"],
-            "potential_challenges": ["challenge1", "challenge2"],
-            "onboarding_considerations": ["consideration1", "consideration2"],
-            "rationale": "3-4 sentence comprehensive explanation including company context"
-        }}
-        """
+        prompt = get_prompt(
+            "score_candidate_with_company_context",
+            resume_data=resume_data,
+            jd_text=jd_text,
+            company_profile=json.dumps(company_profile, indent=2)
+        )
     else:
-        # Fallback to basic scoring if no company profile
-        prompt = f"""
-        Score this candidate against the job description:
-
-        CANDIDATE:
-        {resume_data}
-
-        JOB DESCRIPTION:
-        {jd_text}
-
-        Provide scoring in JSON format:
-        {{
-            "overall_score": 1-10,
-            "skills_match": 1-10,
-            "experience_match": 1-10,
-            "culture_fit": 1-10,
-            "recommendation": "Strong/Moderate/Weak Match",
-            "strengths": ["strength1", "strength2"],
-            "concerns": ["concern1", "concern2"],
-            "interview_focus": ["topic1", "topic2"],
-            "rationale": "2-3 sentence explanation"
-        }}
-        """
+        prompt = get_prompt(
+            "score_candidate",
+            resume_data=resume_data,
+            jd_text=jd_text
+        )
     
-    response = model.generate_content(prompt)
+    generation_config = genai.types.GenerationConfig(temperature=0.0)
+    response = model.generate_content(prompt, generation_config=generation_config)
     return response.text
 
 def score_candidate(resume_data, jd_text):
@@ -359,41 +183,33 @@ def analyze():
         # Analyze resume with JSON parsing like backup system
         try:
             resume_response = analyze_resume(resume_text)
-            # Find the JSON object in the response text
-            match = re.search(r'\{.*\}', resume_response, re.DOTALL)
-            if match:
-                json_str = match.group(0)
-                resume_data = json.loads(json_str)
-            else:
-                print(f"Could not find a JSON object in the Gemini response: {resume_response}")
-                return jsonify({"error": "Could not parse resume analysis response"})
-        except (json.JSONDecodeError, AttributeError) as e:
-            print(f"Error decoding or parsing Gemini response: {resume_response if 'resume_response' in locals() else 'No response'}, Error: {str(e)}")
-            return jsonify({"error": "Error parsing resume analysis"})
+            # Clean the response to ensure it's valid JSON
+            cleaned_response = re.sub(r'```json\s*|\s*```', '', resume_response).strip()
+            resume_data = json.loads(cleaned_response)
+        except json.JSONDecodeError as e:
+            print(f"Error decoding resume analysis JSON: {e}")
+            print(f"Raw response was: {resume_response}")
+            return jsonify({"error": "Error parsing resume analysis response"})
         except Exception as e:
-            print(f"Error calling Gemini API: {str(e)}")
+            print(f"Error analyzing resume: {str(e)}")
             return jsonify({"error": f"Error analyzing resume: {str(e)}"})
-        
+
         # Enhanced candidate scoring with pre-loaded company context
         try:
             scoring_response = score_candidate_with_company_context(
-                json.dumps(resume_data), 
-                jd_text, 
+                json.dumps(resume_data),
+                jd_text,
                 COMPANY_PROFILE  # Use pre-loaded company profile
             )
-            # Find the JSON object in the response text
-            match = re.search(r'\{.*\}', scoring_response, re.DOTALL)
-            if match:
-                scoring_json_str = match.group(0)
-                scoring_data = json.loads(scoring_json_str)
-            else:
-                print(f"Could not find a JSON object in the scoring response: {scoring_response}")
-                return jsonify({"error": "Could not parse scoring response"})
-        except (json.JSONDecodeError, AttributeError) as e:
-            print(f"Error decoding or parsing scoring response: {scoring_response if 'scoring_response' in locals() else 'No response'}, Error: {str(e)}")
+            # Clean the response to ensure it's valid JSON
+            cleaned_scoring_response = re.sub(r'```json\s*|\s*```', '', scoring_response).strip()
+            scoring_data = json.loads(cleaned_scoring_response)
+        except json.JSONDecodeError as e:
+            print(f"Error decoding scoring JSON: {e}")
+            print(f"Raw response was: {scoring_response}")
             return jsonify({"error": "Error parsing scoring response"})
         except Exception as e:
-            print(f"Error calling scoring API: {str(e)}")
+            print(f"Error scoring candidate: {str(e)}")
             return jsonify({"error": f"Error scoring candidate: {str(e)}"})
         
         # Prepare response with enhanced data

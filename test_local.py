@@ -9,6 +9,7 @@ import sys
 import tempfile
 from unittest.mock import Mock, patch
 import requests
+import requests_mock
 
 # Add the current directory to Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -20,18 +21,22 @@ def test_url_extraction():
     # Import the function from main.py
     from main import extract_text_from_url
     
-    # Test with a simple URL (using a test page)
-    try:
-        text = extract_text_from_url("https://httpbin.org/html")
-        if text and len(text) > 10:
-            print("✅ URL extraction working")
-            return True
-        else:
-            print("❌ URL extraction returned empty or short text")
+    # Mock the network call
+    with requests_mock.Mocker() as m:
+        m.get("https://httpbin.org/html", text="<html><body><h1>Herman Melville</h1></body></html>")
+    
+        # Test with a simple URL (using a test page)
+        try:
+            text = extract_text_from_url("https://httpbin.org/html")
+            if text and "Herman Melville" in text:
+                print("✅ URL extraction working")
+                return True
+            else:
+                print("❌ URL extraction returned unexpected text")
+                return False
+        except Exception as e:
+            print(f"❌ URL extraction failed: {e}")
             return False
-    except Exception as e:
-        print(f"❌ URL extraction failed: {e}")
-        return False
 
 def test_flask_app():
     """Test Flask app startup"""
@@ -39,8 +44,8 @@ def test_flask_app():
     
     try:
         # Mock the GCP components that require authentication
-        with patch('vertexai.init'), \
-             patch('vertexai.generative_models.GenerativeModel'), \
+        with patch('google.generativeai.configure'), \
+             patch('google.generativeai.GenerativeModel'), \
              patch('google.cloud.documentai.DocumentProcessorServiceClient'):
             
             from main import app
@@ -68,7 +73,7 @@ def test_dependencies():
         'requests', 
         'bs4',
         'google.cloud.documentai',
-        'vertexai'
+        'google.generativeai'
     ]
     
     missing = []
