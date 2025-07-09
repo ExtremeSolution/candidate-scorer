@@ -23,7 +23,7 @@ SERVICE_NAME=${SERVICE_NAME:-hr-scorer}
 GCP_REGION=${GCP_REGION:-us-central1}
 GCP_LOCATION=${GCP_LOCATION:-us}
 SERVICE_ACCOUNT_NAME=${SERVICE_ACCOUNT_NAME:-hr-flows-sa}
-GEMINI_MODEL=${GEMINI_MODEL:-gemini-1.5-pro}
+GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.5-pro}
 
 echo "🚀 Starting HR Candidate Scorer deployment..."
 echo "Project: $GCP_PROJECT_ID"

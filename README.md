@@ -59,7 +59,7 @@ An open-source, enterprise-grade HR tool that uses Google Cloud's AI services to
 
 ```bash
 git clone <your-repo-url>
-cd hr-agent
+cd candidate-scorer
 cp .env.example .env
 ```
 
@@ -381,8 +381,8 @@ python main.py        # Start local server
 Thanks to all the contributors who help make this project better!
 
 <!-- Contributors will be automatically updated -->
-<a href="https://github.com/extremesolution/hr-agent/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=extremesolution/hr-agent" />
+<a href="https://github.com/extremesolution/candidate-scorer/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=extremesolution/candidate-scorer" />
 </a>
 
 *Want to see your avatar here? [Start contributing!](CONTRIBUTING.md)*
