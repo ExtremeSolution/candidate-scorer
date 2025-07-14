@@ -19,6 +19,7 @@
 **/gcp-*.json
 
 # Company analysis data - INCLUDED for enhanced analysis
+!company_profile.json
 
 # Git
 .git/
